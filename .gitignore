@@ -5,11 +5,12 @@
 
 # Built binaries
 dist/
-gdrive-linux-amd64
-gdrive-linux-arm64
-gdrive-darwin-amd64
-gdrive-darwin-arm64
-gdrive-windows-amd64.exe
+kaggle-gdrive-linux-amd64
+kaggle-gdrive-linux-arm64
+kaggle-gdrive-darwin-amd64
+kaggle-gdrive-darwin-arm64
+kaggle-gdrive-windows-amd64.exe
+kaggle-gdrive
 
 # Go
 *.test

@@ -1,0 +1,17 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Built binaries
+dist/
+gdrive-linux-amd64
+gdrive-linux-arm64
+gdrive-darwin-amd64
+gdrive-darwin-arm64
+gdrive-windows-amd64.exe
+
+# Go
+*.test
+*.out
+vendor/

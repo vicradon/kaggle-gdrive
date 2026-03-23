@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
@@ -16,39 +18,55 @@ import (
 )
 
 var (
-	fromPath = flag.String("from", "", "Local source path (file or directory)")
-	toPath   = flag.String("to", "", `Google Drive destination (e.g. "/drive/My Drive/PetCrib")`)
+	fromPath    = flag.String("from", "", "Local source path (file or directory)")
+	toPath      = flag.String("to", "", `Google Drive destination (e.g. "/drive/My Drive/PetCrib")`)
+	noTimestamp = flag.Bool("notimestamp", false, "Skip creating a timestamped subfolder")
 )
 
 func main() {
 	flag.Parse()
 
 	if *fromPath == "" || *toPath == "" {
-		fmt.Fprintln(os.Stderr, "Usage: gdrive -from <local-path> -to <drive-path>")
+		fmt.Fprintln(os.Stderr, "Usage: gdrive -from <local-path> -to <drive-path> [-notimestamp]")
 		os.Exit(1)
 	}
 
-	saKey := os.Getenv("GDRIVE_SA_KEY")
-	if saKey == "" {
-		fmt.Fprintln(os.Stderr, "error: GDRIVE_SA_KEY environment variable is not set")
+	clientID     := os.Getenv("GDRIVE_CLIENT_ID")
+	clientSecret := os.Getenv("GDRIVE_CLIENT_SECRET")
+	refreshToken := os.Getenv("GDRIVE_REFRESH_TOKEN")
+
+	if clientID == "" || clientSecret == "" || refreshToken == "" {
+		fmt.Fprintln(os.Stderr, "error: GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET, and GDRIVE_REFRESH_TOKEN must all be set")
 		os.Exit(1)
 	}
 
 	ctx := context.Background()
 
-	conf, err := google.JWTConfigFromJSON([]byte(saKey), drive.DriveScope)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to parse service account key: %v\n", err)
-		os.Exit(1)
+	conf := &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Endpoint:     google.Endpoint,
+		Scopes:       []string{drive.DriveScope},
 	}
 
-	svc, err := drive.NewService(ctx, option.WithHTTPClient(conf.Client(ctx)))
+	token := &oauth2.Token{
+		RefreshToken: refreshToken,
+	}
+
+	svc, err := drive.NewService(ctx, option.WithTokenSource(conf.TokenSource(ctx, token)))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to create Drive service: %v\n", err)
 		os.Exit(1)
 	}
 
 	drivePath := normaliseDrivePath(*toPath)
+
+	// Append a timestamped subfolder unless -notimestamp is passed
+	if !*noTimestamp {
+		timestamp := time.Now().Format("02-01-2006---15:04")
+		drivePath = drivePath + "/" + timestamp
+		fmt.Printf("  🕐 Destination folder: %s\n", timestamp)
+	}
 
 	destFolderID, err := ensureFolderPath(ctx, svc, drivePath)
 	if err != nil {

@@ -16,3 +16,6 @@ kaggle-gdrive
 *.test
 *.out
 vendor/
+
+generate_token/client_secret.json
+generate_token/node_modules

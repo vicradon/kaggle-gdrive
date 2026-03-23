@@ -1,4 +1,4 @@
-module github.com/yourusername/gdrive
+module github.com/vicradon/kaggle-gdrive
 
 go 1.22
 
